@@ -1,0 +1,130 @@
+
+h1, h2 {
+  text-align: center;
+  margin-bottom: 0;
+  color: #25770a;
+}
+
+h2 {
+  margin-bottom: 10px;
+}
+
+a {
+  color: #25770a;
+}
+
+body {
+  background-color: #282c34;
+  color: white;
+  font-size: calc(10px + 2vmin);
+  padding: 10px;
+}
+
+code {
+  font-size: calc(5px + 2vmin);
+}
+
+.Value {
+  color: #50a932;
+}
+
+.App-logo {
+  height: 10vmin;
+  pointer-events: none;
+}
+
+.App-header {
+  background-color: #282c34;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.grid-container, .bug-container {
+  display: grid;
+  grid-template-columns: max-content auto;
+  padding: 10px;
+}
+
+.grid-item a {
+  color: white;
+  text-decoration: none;
+}
+
+.grid-item {
+  padding-right: 50px;
+  padding-bottom: 30px;
+  text-align: left;
+}
+
+.category {
+  width: 100%;
+  margin-bottom: 20px;
+  float: left;
+  background-color: #1d2025;
+}
+
+.ChartInfo .grid-item {
+  padding-bottom: 10px;
+  text-align: left;
+}
+
+.Chart, .ChartInfo {
+  float: left;
+  margin: 10px;
+  padding: 20px;
+  width: min-content;
+}
+
+.Chart p, .ChartInfo p {
+  margin-top: 0; 
+}
+
+.users p, .bugs p {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.cancelButton {
+  float: right;
+}
+
+.users table {
+  padding: 20px;
+}
+
+.userRow #deviceid a {
+  text-decoration: none;
+  color: #50a932;
+}
+
+.userRow #devicename {
+  color: #50a932;
+}
+
+.userRow #devicetags Button {
+  color: white;
+}
+
+.userRow .userValue{
+  padding-bottom: 10px;
+  padding-right: 20px;
+  border-bottom: gray 1px solid;
+}
+
+.bug-container div {
+  text-align: left;
+  padding-right: 20px;
+}
+
+.bug-container .value, .bug-container a {
+  color: #50a932;
+  
+}
+
+.bugDiv button{
+  align-content: left;
+}
