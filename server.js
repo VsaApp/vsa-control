@@ -36,6 +36,11 @@ const analyseStats = (client) => {
         const results = {};
         data = JSON.parse(fs.readFileSync(file).toString());
 
+        if (data.appStarts === undefined) data.appStarts = {};
+        if (data.users === undefined) data.users = {};
+        if (data.userCount === undefined) data.userCount = {};
+        if (data.appStarts === undefined) data.appVersions = {};
+
         // Send the count of users who used the app today
         usersToday = data.users[new Date().toDateString()] || [];
         results.userCountToday = usersToday.length;
