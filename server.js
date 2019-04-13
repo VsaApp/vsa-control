@@ -150,7 +150,7 @@ const sendBugs = (client) => {
         });
 
         results.bugs = {};
-        sortedKeys.forEach((key) => {results.bugs[key] = data[key].reverse());
+        sortedKeys.forEach((key) => results.bugs[key] = data[key].reverse());
 
         client.emit('newData', results);
     }
