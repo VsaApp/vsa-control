@@ -43,7 +43,14 @@ code {
   color: white;
 }
 
-.grid-container, .bug-container {
+.grid-container {
+  width: min-content;
+  display: grid;
+  grid-template-columns: max-content max-content;
+  padding: 10px;
+}
+
+.bug-container {
   display: grid;
   grid-template-columns: max-content auto;
   padding: 10px;
