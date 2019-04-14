@@ -27,6 +27,7 @@ class User extends Component {
                 <td className="userValue" id="deviceid"><a href={'https://api.vsa.2bad2c0.de/tags/' + this.props.id}
                                                            rel="noopener noreferrer" target="_blank">{this.props.id}</a>
                 </td>
+                <td className="userValue" id={this.props.dev === 'true' ? "isDev" : "normalUser"}>{this.props.dev}</td>
             </tr>
         );
     }
@@ -165,7 +166,7 @@ class App extends Component {
                                             <div className="value">{bug.count}</div>
                                             <div className="bug-item">Users:</div>
                                             <div className="value">[{bug.ids.map((id) => <a
-                                                href={"api.vsa.2bad2c0.de/tags/" + id}>{id}, </a>)}]
+                                                href={"https://api.vsa.2bad2c0.de/tags/" + id} rel="noopener noreferrer" target="_blank">{id}, </a>)}]
                                             </div>
                                             <div className="bug-item">Msg:</div>
                                             <div className="value">
@@ -176,9 +177,11 @@ class App extends Component {
                                     <IconButton
                                         variant="outlined"
                                         onClick={() => {
+                                          if (window.confirm("Do you want to delete this bug?")) {
                                             this.state.bugs[version][bugs.indexOf(bug)] = undefined;
                                             this.setState({});
                                             this.socket.emit('removeBug', {version: version, bug: bug});
+                                          }
                                         }}
                                         aria-label="Delete"
                                         className="cancelButton">
@@ -217,10 +220,13 @@ class App extends Component {
                 <td className="userValue"><Button
                     onClick={() => this.socket.emit(isDevice ? 'loadDevices' : 'loadUsers', 'id')} variant="outlined"
                     className="loadButton" color="inherit"><b>Device ID</b></Button></td>
+                <td className="userValue"><Button
+                    onClick={() => this.socket.emit(isDevice ? 'loadDevices' : 'loadUsers', 'dev')} variant="outlined"
+                    className="loadButton" color="inherit"><b>Dev</b></Button></td>
             </tr>
             {devices.map((device) => <User index={devices.indexOf(device) + 1} device={device.tags.deviceName}
                                            lastSession={device.tags.lastSession} appVersion={device.tags.appVersion}
-                                           os={device.tags.os} id={device.id} tags={device.tags.toString()}/>)}
+                                           os={device.tags.os} id={device.id} tags={device.tags.toString()} dev={device.tags.dev.toString()}/>)}
         </table>);
     };
 

@@ -42,8 +42,8 @@ const compaireDevices = (d1, d2, sort) => {
 };
 
 const sortDeviceNames = (devices, sort) => {
-    const key = sort === 'device' ? 'deviceName' : 'os';
-    const useKey = sort === 'device' || sort === 'os';
+    const key = sort === 'device' ? 'deviceName' : sort;
+    const useKey = sort !== 'id';
     const sortedNames = devices.filter((device) => {
         return (useKey ? device.tags[key] : device.id) !== undefined;
     }).map((device) => {
@@ -57,14 +57,14 @@ const sortDeviceNames = (devices, sort) => {
         return sortedNames.indexOf(d1) < sortedNames.indexOf(d2) ? -1 : sortedNames.indexOf(d1) === sortedNames.indexOf(d2) ? 0 : 1;
     });
 
-    return sort === 'os' ? result.reverse() : result;
+    return sort === 'os' || sort === 'dev' ? result.reverse() : result;
 };
 
 const sendDevies = (client, sort) => {
     const file = path.resolve(config.apiPath, 'tags.json');
     if (fs.existsSync(file)) {
         data = JSON.parse(fs.readFileSync(file).toString()).devices;
-        if (sort === 'device' || sort === 'id' || sort === 'os') data = sortDeviceNames(data, sort);
+        if (['od', 'device', 'id', 'dev'].includes(sort)) data = sortDeviceNames(data, sort);
         else data = data.sort((d1, d2) => compaireDevices(d1, d2, sort));
         client.emit('newData', {devices: data});
     }
@@ -74,7 +74,7 @@ const sendUsers = (client, sort) => {
     const file = path.resolve(config.apiPath, 'tags.json');
     if (fs.existsSync(file)) {
         data = JSON.parse(fs.readFileSync(file).toString()).users;
-        if (sort === 'device' || sort === 'id') data = sortDeviceNames(data);
+        if (['od', 'device', 'id', 'dev'].includes(sort)) data = sortDeviceNames(data, sort);
         else data = data.sort((d1, d2) => compaireDevices(d1, d2, sort));
         client.emit('newData', {users: data});
     }
@@ -197,7 +197,7 @@ const sendBugs = (client) => {
             v1 = parseInt(v1.split('+')[1]);
             v2 = parseInt(v2.split('+')[1]);
 
-            return v1 < v2 ? -1 : v1 === v2 ? 0 : 1;
+            return v1 < v2 ? 1 : v1 === v2 ? 0 : -1;
         });
 
         results.bugs = {};

@@ -108,7 +108,7 @@ code {
   color: #50a932;
 }
 
-.userRow #devicename {
+.userRow #devicename, .userRow #isDev {
   color: #50a932;
 }
 
