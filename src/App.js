@@ -258,7 +258,7 @@ class App extends Component {
                     <div className="grid-item"><b className="Value">{this.state.userCountToday}</b></div>
                     <div className="grid-item"><a href="#appStarts">App starts today: </a></div>
                     <div className="grid-item"><b
-                        className="Value">{this.state.appStartsToday} ({this.state.userCountToday === 0 ? '0' : (this.state.appStartsToday / this.state.userCountToday)} /
+                        className="Value">{this.state.appStartsToday} ({this.state.userCountToday === 0 ? '0' : (this.state.appStartsToday / this.state.userCountToday).toFixed(1)} /
                         User)</b></div>
                     <div className="grid-item"><a href="#tracking">Newest App Version: </a></div>
                     <div className="grid-item"><b
@@ -289,7 +289,7 @@ class App extends Component {
                                 </div>
                                 <div className="grid-item">App starts today:</div>
                                 <div className="grid-item"><b
-                                    className="Value">{this.state.appStartsToday || '-'} ({this.state.userCountToday === 0 ? '-' : this.state.appStartsToday / this.state.userCountToday} /
+                                    className="Value">{this.state.appStartsToday || '-'} ({this.state.userCountToday === 0 ? '-' : (this.state.appStartsToday / this.state.userCountToday).toFixed(1)} /
                                     User)</b></div>
                             </div>
                         </div>
