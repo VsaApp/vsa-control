@@ -185,15 +185,15 @@ class App extends Component {
   createDevicesTable = (isDevice) => {
     //Inner loop to create children
     const devices = isDevice ? this.state.devices : this.state.users;
-    if (devices === undefined) return <p><Button onClick={() => this.socket.emit(isDevice ? 'loadDevices' : 'loadUsers')} variant="outlined" className="loadButton" color="inherit">Load</Button></p>;
+    if (devices === undefined) return <p><Button onClick={() => this.socket.emit(isDevice ? 'loadDevices' : 'loadUsers', 'lastSession')} variant="outlined" className="loadButton" color="inherit">Load</Button></p>;
     return (<table>
       <tr className="userRow">
         <td className="userValue"></td>
-        <td className="userValue"><b>Device</b></td>
-        <td className="userValue"><b>Last Session</b></td>
-        <td className="userValue"><b>App Version</b></td>
-        <td className="userValue"><b>Os</b></td>
-        <td className="userValue"><b>Device ID</b></td>
+        <td className="userValue"><Button onClick={() => this.socket.emit(isDevice ? 'loadDevices' : 'loadUsers', 'device')} variant="outlined" className="loadButton" color="inherit"><b>Device</b></Button></td>
+        <td className="userValue"><Button onClick={() => this.socket.emit(isDevice ? 'loadDevices' : 'loadUsers', 'lastSession')} variant="outlined" className="loadButton" color="inherit"><b>Last Session</b></Button></td>
+        <td className="userValue"><Button onClick={() => this.socket.emit(isDevice ? 'loadDevices' : 'loadUsers', 'appVersion')} variant="outlined" className="loadButton" color="inherit"><b>App Version</b></Button></td>
+        <td className="userValue"><Button onClick={() => this.socket.emit(isDevice ? 'loadDevices' : 'loadUsers', 'os')} variant="outlined" className="loadButton" color="inherit"><b>Os</b></Button></td>
+        <td className="userValue"><Button onClick={() => this.socket.emit(isDevice ? 'loadDevices' : 'loadUsers', 'id')} variant="outlined" className="loadButton" color="inherit"><b>Device ID</b></Button></td>
       </tr>
       {devices.map((device) => <User index={devices.indexOf(device) + 1} device={device.tags.deviceName} lastSession={device.tags.lastSession} appVersion={device.tags.appVersion} os={device.tags.os} id={device.id} tags={device.tags.toString()} />)}
     </table>);

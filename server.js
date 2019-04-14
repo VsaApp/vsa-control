@@ -13,18 +13,69 @@ const analyseTags = (client) => {
     }
 }
 
-const sendDevies = (client) => {
+const compaireDevices = (d1, d2, sort) => {
+    if (sort === 'lastSession') {
+        if (d1.tags.lastSession === undefined) return 1;
+        if (d2.tags.lastSession === undefined) return -1;
+        l1 = new Date(d1.tags.lastSession).getTime();
+        l2 = new Date(d2.tags.lastSession).getTime();
+        return l1 < l2 ? 1 : l1 == l2 ? 0 : -1;
+    }
+    else if (sort === 'appVersion') {
+        if (d1.tags.appVersion === undefined) return 1;
+        if (d2.tags.appVersion === undefined) return -1;
+        v1 = parseInt(d1.tags.appVersion.split('+')[1]);
+        v2 = parseInt(d2.tags.appVersion.split('+')[1]);
+        return v1 < v2 ? 1 : v1 == v2 ? 0 : -1;
+    }
+    else if (sort === 'os') {
+        if (d1.tags.os === undefined) return 1;
+        if (d2.tags.os === undefined) return -1;
+        if (d1.tags.os.split(' ')[0] !== d1.tags.os.split(' ')[0]) {
+            return d1.tags.os.split(' ')[0] === 'Android' ? -1 : 1;
+        }
+        v1 = parseInt(d1.tags.os.split(' ')[1].split('.').join('').padStart(3, '0'));
+        v2 = parseInt(d2.tags.os.split(' ')[1].split('.').join('').padStart(3, '0'));
+        return v1 < v2 ? -1 : v1 == v2 ? 0 : 1;
+    }
+    return 1;
+}
+
+const sortDeviceNames = (devices, sort) => {
+    const key = sort === 'device' ? 'deviceName' : 'os';
+    const useKey = sort === 'device' || sort === 'os';
+    const sortedNames = devices.filter((device) => {
+        return (useKey ? device.tags[key] : device.id)  !== undefined;
+    }).map((device) => {
+        return (useKey ? device.tags[key] : device.id);
+    }).sort();
+    const result = devices.sort((d1, d2) => {
+        d1 = (useKey ? d1.tags[key] : d1.id);
+        d2 = (useKey ? d2.tags[key] : d2.id);
+        if (d1 === undefined) return sort === 'os' ? -1 : 1;
+        if (d2 === undefined) return sort === 'os' ? 1 : -1;
+        return sortedNames.indexOf(d1) < sortedNames.indexOf(d2) ? -1 : sortedNames.indexOf(d1) === sortedNames.indexOf(d2) ? 0 : 1;
+    });
+
+    return sort === 'os' ? result.reverse() : result;
+}
+
+const sendDevies = (client, sort) => {
     const file = path.resolve(config.apiPath, 'tags.json');
     if (fs.existsSync(file)) {
         data = JSON.parse(fs.readFileSync(file).toString()).devices;
+        if (sort === 'device' || sort === 'id' || sort === 'os') data = sortDeviceNames(data, sort);
+        else data = data.sort((d1, d2) => compaireDevices(d1, d2, sort));
         client.emit('newData', {devices: data});
     }
 };
 
-const sendUsers = (client) => {
+const sendUsers = (client, sort) => {
     const file = path.resolve(config.apiPath, 'tags.json');
     if (fs.existsSync(file)) {
         data = JSON.parse(fs.readFileSync(file).toString()).users;
+        if (sort === 'device' || sort === 'id') data = sortDeviceNames(data);
+        else data = data.sort((d1, d2) => compaireDevices(d1, d2, sort));
         client.emit('newData', {users: data});
     }
 };
@@ -168,8 +219,8 @@ io.on('connection', (client) => {
         sendBugs(client);
     });
 
-    client.on('loadDevices', () => sendDevies(client));
-    client.on('loadUsers', () => sendUsers(client));
+    client.on('loadDevices', (sort) => sendDevies(client, sort));
+    client.on('loadUsers', (sort) => sendUsers(client, sort));
     client.on('loadBugsVersions', () => sendBugs(client));
     client.on('removeBug', (value) => removeBug(value));
 });
