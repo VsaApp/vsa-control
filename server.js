@@ -1,7 +1,9 @@
-const io = require('socket.io')();
+const express = require('express');
+const app = express();
+const server = require('http').Server(app);
+const io = require('socket.io')(server);
 const fs = require('fs');
 const path = require('path');
-const port = 8000;
 
 const config = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'config.json')).toString());
 
@@ -11,7 +13,7 @@ const analyseTags = (client) => {
         data = JSON.parse(fs.readFileSync(file).toString());
         client.emit('newData', {userCount: data.devices.length, oldUserCount: data.users.length});
     }
-}
+};
 
 const compaireDevices = (d1, d2, sort) => {
     if (sort === 'lastSession') {
@@ -20,15 +22,13 @@ const compaireDevices = (d1, d2, sort) => {
         l1 = new Date(d1.tags.lastSession).getTime();
         l2 = new Date(d2.tags.lastSession).getTime();
         return l1 < l2 ? 1 : l1 == l2 ? 0 : -1;
-    }
-    else if (sort === 'appVersion') {
+    } else if (sort === 'appVersion') {
         if (d1.tags.appVersion === undefined) return 1;
         if (d2.tags.appVersion === undefined) return -1;
         v1 = parseInt(d1.tags.appVersion.split('+')[1]);
         v2 = parseInt(d2.tags.appVersion.split('+')[1]);
         return v1 < v2 ? 1 : v1 == v2 ? 0 : -1;
-    }
-    else if (sort === 'os') {
+    } else if (sort === 'os') {
         if (d1.tags.os === undefined) return 1;
         if (d2.tags.os === undefined) return -1;
         if (d1.tags.os.split(' ')[0] !== d1.tags.os.split(' ')[0]) {
@@ -39,13 +39,13 @@ const compaireDevices = (d1, d2, sort) => {
         return v1 < v2 ? -1 : v1 == v2 ? 0 : 1;
     }
     return 1;
-}
+};
 
 const sortDeviceNames = (devices, sort) => {
     const key = sort === 'device' ? 'deviceName' : 'os';
     const useKey = sort === 'device' || sort === 'os';
     const sortedNames = devices.filter((device) => {
-        return (useKey ? device.tags[key] : device.id)  !== undefined;
+        return (useKey ? device.tags[key] : device.id) !== undefined;
     }).map((device) => {
         return (useKey ? device.tags[key] : device.id);
     }).sort();
@@ -58,7 +58,7 @@ const sortDeviceNames = (devices, sort) => {
     });
 
     return sort === 'os' ? result.reverse() : result;
-}
+};
 
 const sendDevies = (client, sort) => {
     const file = path.resolve(config.apiPath, 'tags.json');
@@ -81,7 +81,7 @@ const sendUsers = (client, sort) => {
 };
 
 const analyseStats = (client) => {
-    
+
     const file = path.resolve(config.apiPath, 'stats.json');
     if (fs.existsSync(file)) {
         const results = {};
@@ -131,14 +131,14 @@ const analyseStats = (client) => {
         client.emit('userCountData', days);
         const end = days[Object.keys(days)[Object.keys(days).length - 1]];
         const start = days[Object.keys(days)[0]];
-        results.countIncrease = ((end - start) / start  * 100).toFixed(1);
+        results.countIncrease = ((end - start) / start * 100).toFixed(1);
         results.countIncreaseAbsolut = end - start;
 
         // Send the newest and oldest version
         const currentAppVersions = data.appVersions[Object.keys(data.appVersions)[Object.keys(data.appVersions).length - 1]];
         results.currentAppVersions = currentAppVersions;
         results.newestVersion = [Object.keys(currentAppVersions)[0], currentAppVersions[Object.keys(currentAppVersions)[0]]];
-        results.oldestVersion = [Object.keys(currentAppVersions)[Object.keys(currentAppVersions).length-1], currentAppVersions[Object.keys(currentAppVersions)[Object.keys(currentAppVersions).length-1]]];
+        results.oldestVersion = [Object.keys(currentAppVersions)[Object.keys(currentAppVersions).length - 1], currentAppVersions[Object.keys(currentAppVersions)[Object.keys(currentAppVersions).length - 1]]];
 
         // Send the versions stats
         let lastStats = data.appVersions[Object.keys(data.appVersions)[0]];
@@ -146,7 +146,7 @@ const analyseStats = (client) => {
             const day = new Date(today.getFullYear(), today.getMonth(), i).toDateString();
             if (data.appVersions[day] !== undefined) lastStats = data.appVersions[day];
             days[day] = data.appVersions[day] === undefined ? lastStats : data.appVersions[day];
-        }       
+        }
         client.emit('appVersionsData', days);
 
         // Send all available months and years
@@ -169,7 +169,7 @@ const removeBug = (value) => {
     const file = path.resolve(config.apiPath, 'bugs.json');
     if (fs.existsSync(file)) {
         let data = JSON.parse(fs.readFileSync(file).toString());
-        
+
         let index = -1;
         data[value.version].forEach((bug) => {
             if (JSON.stringify(bug) === JSON.stringify(value.bug)) index = data[value.version].indexOf(bug);
@@ -183,7 +183,7 @@ const removeBug = (value) => {
 
         fs.writeFileSync(file, JSON.stringify(data, null, 2));
     }
-}
+};
 
 const sendBugs = (client) => {
     const file = path.resolve(config.apiPath, 'bugs.json');
@@ -225,6 +225,10 @@ io.on('connection', (client) => {
     client.on('removeBug', (value) => removeBug(value));
 });
 
+app.use(express.static('build'));
 
-io.listen(port);
-console.log('listening on port ', port);
+const port = process.env.PORT || 8000;
+
+server.listen(port, () => {
+    console.log('listening on port ', port);
+});

@@ -6,6 +6,7 @@
     "@material-ui/core": "^3.9.3",
     "@material-ui/icons": "^3.0.2",
     "chart.js": "^1.1.1",
+    "express": "^4.16.4",
     "react": "^16.8.6",
     "react-chartjs": "^1.2.0",
     "react-dom": "^16.8.6",
@@ -27,5 +28,6 @@
     "not dead",
     "not ie <= 11",
     "not op_mini all"
-  ]
+  ],
+  "proxy": "http://localhost:8000"
 }
