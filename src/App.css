@@ -24,6 +24,14 @@ code {
   font-size: calc(5px + 2vmin);
 }
 
+Select {
+  color: white;
+}
+
+form Select {
+  margin-right: 20px; 
+}
+
 .Value {
   color: #50a932;
 }

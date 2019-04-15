@@ -1,11 +1,12 @@
-export const setAppVersionsData = (days, cB) => {
+export const setAppVersionsData = (data, cB) => {
     const allVersions = [];
+    const days = data[1];
     Object.keys(days).forEach((day) => Object.keys(days[day]).forEach((version) => {
         if (!allVersions.includes(version)) allVersions.push(version);
     }));
     cB({
-        month: Object.keys(days)[0].split(' ')[1],
-        labels: Object.keys(days).map((day) => day.split(' ')[2]),
+        month: data[2],
+        labels: data[0],
         datasets: allVersions.map((version) => {
             const index = allVersions.length - allVersions.indexOf(version);
             return {
@@ -25,30 +26,32 @@ export const setAppVersionsData = (days, cB) => {
     });
 }
 
-export const setUserCountChartData = (days, cB) => {
-    cB({
-        month: Object.keys(days)[0].split(' ')[1],
-        labels: Object.keys(days).map((day) => day.split(' ')[2]),
-        datasets: [
-          {
-            label: "Users count history",
-            fillColor: "#50a932a0",
-            strokeColor: "#50a932",
-            pointColor: "#50a932",
-            pointStrokeColor: "#50a932",
-            pointHighlightFill: "#50a932",
-            pointHighlightStroke: "rgba(220,220,220,1)",
-            data: Object.keys(days).map((day) => days[day])
-          },
-        ]
-    });
+export const setUserCountChartData = (data, cB) => {
+  const days = data[1];
+  cB({
+      month: data[2],
+      labels: data[0],
+      datasets: [
+        {
+          label: "Users count history",
+          fillColor: "#50a932a0",
+          strokeColor: "#50a932",
+          pointColor: "#50a932",
+          pointStrokeColor: "#50a932",
+          pointHighlightFill: "#50a932",
+          pointHighlightStroke: "rgba(220,220,220,1)",
+          data: Object.keys(days).map((day) => days[day])
+        },
+      ]
+  });
 }
     
 
-export const setTrackingChartData = (days, cB) => {
-    cB({
-    month: Object.keys(days)[0].split(' ')[1],
-    labels: Object.keys(days).map((day) => day.split(' ')[2]),
+export const setTrackingChartData = (data, cB) => {
+  const days = data[1];
+  cB({
+    month: data[2],
+    labels: data[0],
     datasets: [
       {
         label: "Users per day",

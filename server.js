@@ -60,7 +60,7 @@ const sortDeviceNames = (devices, sort) => {
     return sort === 'os' || sort === 'dev' ? result.reverse() : result;
 };
 
-const sendDevies = (client, sort) => {
+const sendDevices = (client, sort) => {
     const file = path.resolve(config.apiPath, 'tags.json');
     if (fs.existsSync(file)) {
         data = JSON.parse(fs.readFileSync(file).toString()).devices;
@@ -80,7 +80,75 @@ const sendUsers = (client, sort) => {
     }
 };
 
-const analyseStats = (client) => {
+const forDaysInSpace = (days, space, cB) => {
+    const dayInMillis = 1000 * 60 * 60 * 24; 
+    const today = new Date();
+    let spaceName;
+    let step = 1;
+    let stepsInDays = true;
+    let start;
+    let end;
+    if (space === 'current') {
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = today;
+        if (end.getTime() > today.getTime()) end = today;
+        spaceName = start.toDateString().split(' ')[1];
+    }
+    else if (space.split(' ').length === 2 && space.length === 8) {
+        const year = space.split(' ')[1];
+        const month = space.split(' ')[0];
+        start = new Date(`${month} 1, ${year}`);
+        end = new Date(new Date(start.getFullYear(), start.getMonth() + 1, 1) - dayInMillis);
+        if (end.getMonth() === today.getMonth()) {
+            if (end.getTime() > today.getTime()) end = today;
+        }
+        spaceName = start.toDateString().split(' ')[1];
+    }
+    else if (space.length === 4) {
+        start = new Date(parseInt(space), 0, 1);
+        end = new Date(new Date(parseInt(space) + 1, 0, 1) - dayInMillis);
+        stepsInDays = false;
+        if (end.getFullYear() === today.getFullYear()) {
+            //if (end.getTime() > today.getTime()) end = today;
+        }
+        spaceName = start.getFullYear().toString();
+    }
+    else if (space === 'all') {
+        start = new Date(Object.keys(days)[0]);
+        end = new Date(Object.keys(days)[Object.keys(days).length - 1]);
+        const diffInDays = (end.getTime() - start.getTime()) / dayInMillis;
+        if (diffInDays > 450) stepsInDays = false;
+        if (diffInDays > 15 && stepsInDays) step =  parseInt(diffInDays / 15);
+        spaceName = 'All';
+    }
+    
+
+    const diffInDays = (end.getTime() - start.getTime()) / dayInMillis;
+    for (let i = 0; i <= diffInDays; i += step) {
+        const day = new Date(start.getTime() + i * dayInMillis);
+        if (stepsInDays) {
+            const label = spaceName !== 'All' ? day.getDate().toString() : day.getDate().toString() + ' ' + day.toDateString().split(' ')[1];
+            cB(day.toDateString(), label);
+        }
+        else {
+            const isLastDayInMonth = day.getMonth() != new Date(day.getTime() + dayInMillis).getMonth();
+            if (isLastDayInMonth) cB(day.toDateString(), day.toDateString().split(' ')[1]);
+        }
+    }
+
+    return spaceName;
+};
+
+const getPreviousValue = (days, day, defaultValue) => {
+    const keys = Object.keys(days);
+    const firstDay = new Date(keys[0]);
+    if (firstDay.getTime() > day.getTime()) return defaultValue;
+    for (let i = keys.length - 1; i >= 0; i--) {
+        if (new Date(keys[i]).getTime() < day.getTime()) return days[keys[i]];
+    }
+} 
+
+const analyseStats = (client, space) => {
 
     const file = path.resolve(config.apiPath, 'stats.json');
     if (fs.existsSync(file)) {
@@ -101,15 +169,30 @@ const analyseStats = (client) => {
         results.appStartsToday = startsToday;
 
         // Send the app uses stats
-        const days = {};
-        const today = new Date();
-        for (let i = 1; i <= today.getDate(); i++) {
-            const day = new Date(today.getFullYear(), today.getMonth(), i).toDateString();
+        let days = {};
+        labels = [];
+        let spaceName = forDaysInSpace(data.appStarts, space, (day, label) => {
+            labels.push(label);
             days[day] = [0, 0];
-            days[day][0] = data.appStarts[day] === undefined ? 0 : parseFloat((data.appStarts[day] / data.users[day].length).toFixed(1));
-            days[day][1] = data.users[day] === undefined ? 0 : data.users[day].length;
-        }
-        client.emit('trackingChartData', days);
+            // Show for month or day...
+            if (label.length === 3) {
+                const users = [];
+                let allAppStarts = 0;
+                forDaysInSpace(data.appStarts, `${day.split(' ')[1]} ${day.split(' ')[3]}`, (day, label) => {
+                    allAppStarts += data.appStarts[day] || 0;
+                    (data.users[day] || []).forEach((user) => {
+                        if (!users.includes(user)) users.push(user);
+                    });
+                });
+                days[day][0] = parseFloat((users.length !== 0 ? allAppStarts / users.length : 0).toFixed(1));
+                days[day][1] = users.length;
+            }
+            else {
+                days[day][0] = data.appStarts[day] === undefined ? 0 : parseFloat((data.appStarts[day] / data.users[day].length).toFixed(1));
+                days[day][1] = data.users[day] === undefined ? 0 : data.users[day].length;
+            }
+        });
+        client.emit('trackingChartData', [labels, days, spaceName]);
 
         // Send the average app useses data
         let usersPerTime = 0;
@@ -122,13 +205,13 @@ const analyseStats = (client) => {
         results.appStartsPerUser = parseFloat((startsPerTime / Object.keys(days).length).toFixed(1));
 
         // Send the user count stats
-        let lastCount = data.userCount[Object.keys(data.userCount)[0]];
-        for (let i = 1; i <= today.getDate(); i++) {
-            const day = new Date(today.getFullYear(), today.getMonth(), i).toDateString();
-            if (data.userCount[day] !== undefined) lastCount = data.userCount[day];
-            days[day] = data.userCount[day] === undefined ? lastCount : data.userCount[day];
-        }
-        client.emit('userCountData', days);
+        days = {};
+        labels = [];
+        spaceName = forDaysInSpace(data.userCount, space, (day, label) => {
+            labels.push(label);
+            days[day] = data.userCount[day] !== undefined ? data.userCount[day] : getPreviousValue(data.userCount, new Date(day), 0);
+        });
+        client.emit('userCountData', [labels, days, spaceName]);
         const end = days[Object.keys(days)[Object.keys(days).length - 1]];
         const start = days[Object.keys(days)[0]];
         results.countIncrease = ((end - start) / start * 100).toFixed(1);
@@ -141,20 +224,20 @@ const analyseStats = (client) => {
         results.oldestVersion = [Object.keys(currentAppVersions)[Object.keys(currentAppVersions).length - 1], currentAppVersions[Object.keys(currentAppVersions)[Object.keys(currentAppVersions).length - 1]]];
 
         // Send the versions stats
-        let lastStats = data.appVersions[Object.keys(data.appVersions)[0]];
-        for (let i = 1; i <= today.getDate(); i++) {
-            const day = new Date(today.getFullYear(), today.getMonth(), i).toDateString();
-            if (data.appVersions[day] !== undefined) lastStats = data.appVersions[day];
-            days[day] = data.appVersions[day] === undefined ? lastStats : data.appVersions[day];
-        }
-        client.emit('appVersionsData', days);
+        labels = [];
+        days = {};
+        spaceName = forDaysInSpace(data.appVersions, space, (day, label) => {
+            labels.push(label);
+            days[day] = data.appVersions[day] !== undefined ? data.appVersions[day] : getPreviousValue(data.appVersions, new Date(day), {});
+        });
+        client.emit('appVersionsData', [labels, days, spaceName]);
 
         // Send all available months and years
-        const months = [];
-        const years = [];
+        const months = ['current'];
+        const years = ['current'];
         Object.keys(data.appStarts).forEach((day) => {
             const year = day.split(' ')[3];
-            const month = day.split(' ')[1];
+            const month = day.split(' ')[1] + ' ' + year;
             if (!years.includes(year)) years.push(year);
             if (!months.includes(month)) months.push(month);
         });
@@ -212,17 +295,15 @@ io.on('connection', (client) => {
     client.on('getData', () => {
         client.emit('newData', {timestamp: new Date()});
         analyseTags(client);
-        analyseStats(client);
+        analyseStats(client, 'current');
     });
 
-    client.on('loadBugs', () => {
-        sendBugs(client);
-    });
-
-    client.on('loadDevices', (sort) => sendDevies(client, sort));
+    client.on('loadBugs', () => sendBugs(client));
+    client.on('loadDevices', (sort) => sendDevices(client, sort));
     client.on('loadUsers', (sort) => sendUsers(client, sort));
     client.on('loadBugsVersions', () => sendBugs(client));
     client.on('removeBug', (value) => removeBug(value));
+    client.on('setTimeSpace', (space) => analyseStats(client, space));
 });
 
 app.use(express.static('build'));

@@ -2,6 +2,16 @@ import React, {Component} from 'react';
 import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
 import DeleteIcon from '@material-ui/icons/Delete';
+import EditIcon from '@material-ui/icons/Edit';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import InputLabel from '@material-ui/core/InputLabel';
+import Input from '@material-ui/core/Input';
+import MenuItem from '@material-ui/core/MenuItem';
+import FormControl from '@material-ui/core/FormControl';
+import Select from '@material-ui/core/Select';
 import logo from './img/logo.png';
 import './App.css';
 import openSocket from 'socket.io-client';
@@ -51,7 +61,12 @@ class App extends Component {
         countIncreaseAbsolut: '-',
         countIncrease: '-',
         currentAppVersions: {},
-        expandedBugs: {}
+        expandedBugs: {},
+        dialogOpen: false,
+        timeType: 'month',
+        timeSpace: 'current',
+        availableMonths: ['current'],
+        availableYears: [new Date().getFullYear().toString()]
     };
 
     constructor(props) {
@@ -241,6 +256,70 @@ class App extends Component {
         }
     }
 
+    createCurrentTimeItems() {
+        return (this.state.timeType === 'month' ? this.state.availableMonths : this.state.availableYears).map((item) => {
+            return <MenuItem value={item}>{item}</MenuItem>
+        })
+    }
+
+    createSpaceEditButton() {
+        return <div>
+            <Dialog
+                disableBackdropClick={false}
+                disableEscapeKeyDown={false}
+                open={this.state.dialogOpen}
+                onClose={() => this.setState({dialogOpen: false})}
+            >
+            <DialogTitle>Select the time space</DialogTitle>
+            <DialogContent>
+                <form className="timeSpaceForm">
+                    <FormControl className="formControl">
+                        <InputLabel htmlFor="time-type-input">Type</InputLabel>
+                        <Select
+                        value={this.state.timeType}
+                        onChange={(event) => {
+                            this.setState({
+                                timeType: event.target.value,
+                                timeSpace: 'current'
+                            });
+                        }}
+                        input={<Input id="time-type-input" />}
+                        >
+                            <MenuItem value={'month'}>Month</MenuItem>
+                            <MenuItem value={'year'}>Year</MenuItem>
+                            <MenuItem value={'all'}>All</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <FormControl className="formControl">
+                        <InputLabel htmlFor="time-space-input">Time</InputLabel>
+                        <Select
+                            disabled={this.state.timeType === 'all'}
+                            value={this.state.timeSpace}
+                            onChange={(event) => this.setState({timeSpace: event.target.value})}
+                            input={<Input id="time-space-input" />}
+                        >
+                            {this.createCurrentTimeItems()}
+                        </Select>
+                    </FormControl>
+                </form>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => this.setState({dialogOpen: false})} color="primary">
+                Cancel
+                </Button>
+                <Button onClick={() => {
+                    this.setState({dialogOpen: false});
+                    let space = this.state.timeType === 'all' ? 'all' : this.state.timeSpace;
+                    if (this.state.timeType === 'year' && space === 'current') space = new Date().getFullYear().toString();
+                    this.socket.emit('setTimeSpace', space);
+                }} color="primary">
+                Ok
+                </Button>
+            </DialogActions>
+            </Dialog>
+        </div>;
+    }
+
     render() {
         return (
             <div className="App">
@@ -267,7 +346,13 @@ class App extends Component {
                     <div className="grid-item"><b
                         className="Value">{this.state.oldestVersion[0]} ({this.state.oldestVersion[1]} User)</b></div>
                 </div>
-                <h2>Stats</h2>
+                <h2>Stats 
+                    <IconButton
+                        variant="outlined"
+                        onClick={() => this.setState({dialogOpen: true})}
+                        aria-label="Edit">
+                        <EditIcon fontSize="large" color="primary"/>
+                    </IconButton>{this.createSpaceEditButton()}</h2>
                 <div id="tracking">
                     <div className="category" id="appStarts">
                         <div className="Chart">
