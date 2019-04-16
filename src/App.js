@@ -15,9 +15,10 @@ import Select from '@material-ui/core/Select';
 import logo from './img/logo.png';
 import './App.css';
 import openSocket from 'socket.io-client';
-import {setAppVersionsData, setTrackingChartData, setUserCountChartData} from './ChartData.js';
+import {setAppVersionsData, setTrackingChartData, setUserCountChartData, setDevicesChartData} from './ChartData.js';
 
 var LineChart = require("react-chartjs").Line;
+var PieChart = require("react-chartjs").Pie;
 
 class User extends Component {
     state = {
@@ -67,7 +68,9 @@ class App extends Component {
         timeSpace: 'current',
         availableMonths: ['current'],
         availableYears: [new Date().getFullYear().toString()],
-        currentSort: 'lastSession'
+        currentSort: 'lastSession',
+        devicesOverviewData: {},
+        sortDirection: true,
     };
 
     constructor(props) {
@@ -83,6 +86,7 @@ class App extends Component {
         this.socket.on('trackingChartData', (data) => setTrackingChartData(data, (trackingChartData) => this.setState({trackingChartData})));
         this.socket.on('userCountData', (data) => setUserCountChartData(data, (userCountData) => this.setState({userCountData})));
         this.socket.on('appVersionsData', (data) => setAppVersionsData(data, (appVersionsData) => this.setState({appVersionsData})));
+        this.socket.on('devicesChartData', (data) => setDevicesChartData(data, (devicesChartData) => this.setState({devicesChartData})));
         this.socket.emit('getData');
     }
 
@@ -90,7 +94,6 @@ class App extends Component {
         var w = window.innerWidth;
         const charWidth = w / 2 < 500 ? w - 100 : w / 2 - 100;
         const charHeight = charWidth / 16 * 9;
-        console.log(charWidth, charHeight);
         if (this.state[name] === undefined) return <p>Wait for data...</p>;
         return <LineChart
             id={name}
@@ -100,6 +103,36 @@ class App extends Component {
             height={charHeight}
         />
     }
+
+    getPieChart(name, count) {
+        var w = window.innerWidth;
+        const charWidth = w / 2 < 500 ? w - 100 : w / 2 - 100;
+        const charHeight = charWidth / 16 * 9;
+        if (this.state[name] === undefined || Object.keys(this.state[name]).length === 0) return <p>Wait for data...</p>;
+        return <PieChart
+            id={name}
+            data={this.state[name]}
+            options={{datasetFill: true, scaleGridLineColor: "rgba(255,255,255,.05)",}}
+            width={charWidth}
+            height={charHeight}
+        />
+    }
+
+    createOverviewTable = (name) => {
+        //Inner loop to create children
+        const values = this.state[name];
+        let cells = [];
+        const colors = Object.keys(values).map((_, index) => {
+            const step1 = parseInt(70 / Object.keys(values).length);
+            const step2 = parseInt(150 / Object.keys(values).length);
+            return `#${(index*step1).toString(16).padStart(2, '0')}${(255-(Object.keys(values).length-index)*step2).toString(16).padStart(2, '0')}${(index*step1).toString(16).padStart(2, '0')}`
+          });
+        Object.keys(values).forEach((value, index) => {
+            cells.push(<div className="grid-item" style={{color:colors[index]}}>{value}:</div>);
+            cells.push(<div className="grid-item"><b className="Value">{values[value]}</b></div>);
+        });
+        return cells;
+    };
 
     createVersionsTable = () => {
         //Inner loop to create children
@@ -213,10 +246,20 @@ class App extends Component {
     };
 
     onSortDevices(type) {
-        if (type === this.state.currentSort) this.setState({devices: this.state.devices.reverse()});
+        if (type === this.state.currentSort) {
+            const sort = !this.state.sortDirection;
+            this.setState({
+                devices: this.state.devices.reverse(),
+                sortDirection: sort
+            });
+            this.socket.emit('sortDevicesChart', {name: type, sort: sort});
+        }
         else {
             this.socket.emit('loadDevices', type);
-            this.setState({currentSort: type});
+            this.setState({
+                currentSort: type,
+                sortDirection: true
+            });
         }
     }
 
@@ -423,6 +466,18 @@ class App extends Component {
                     </div>
                 </div>
                 <h2>Devices</h2>
+                <div className="category" id="gradesChart">
+                    <div className="Chart">
+                        <p>{this.state.deviceDataType}</p>
+                        {this.getPieChart('devicesChartData')}
+                    </div>
+                    <div className="ChartInfo">
+                        <p>Overview </p>
+                        <div className="grid-container">
+                            {this.createOverviewTable('devicesOverviewData')}  
+                        </div>
+                    </div>
+                </div>
                 <div id="devices" className="category users">
                     <p><b>Firebase users ({this.state.userCount})</b><Button
                         onClick={() => this.setState({devices: undefined})} variant="outlined" className="cancelButton"

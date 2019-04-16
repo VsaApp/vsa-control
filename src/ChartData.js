@@ -1,3 +1,20 @@
+export const setDevicesChartData = (data, cB) => {
+  const colors = Object.keys(data).map((_, index) => {
+    const step1 = parseInt(70 / Object.keys(data).length);
+    const step2 = parseInt(150 / Object.keys(data).length);
+    return `rgb(${index*step1},${255-(Object.keys(data).length-index)*step2},${index*step1})`
+  });
+  console.log(colors);
+  cB(Object.keys(data).map((value, index) => {
+    return {
+        value: data[value],
+        color: colors[index],
+        highlight: "#008800",
+        label: value
+    };
+  }));
+}
+
 export const setAppVersionsData = (data, cB) => {
     const allVersions = [];
     const days = data[1];

@@ -70,6 +70,30 @@ const sendDevices = (client, sort) => {
     }
 };
 
+const sendDevicesChartData = (client, name, sort) => {
+    const file = path.resolve(config.apiPath, 'tags.json');
+    if (fs.existsSync(file)) {
+        data = JSON.parse(fs.readFileSync(file).toString()).devices;
+        let key = name;
+        const values = {};
+        if (!['grade', 'dev', 'os', 'appVersion'].includes(key)) key = 'grade';
+        if (name === 'device') key = 'deviceName';
+        data.forEach((device) => {
+            let value = device.tags[key];
+            if (value === undefined) value = 'Undef.';
+            if (name === 'device') value = value.split(' ')[value.split(' ').length - 1];
+            if (values[value] === undefined) values[value] = 0;
+            values[value]++;
+        });
+        const results = {};
+        if (!sort) Object.keys(values).sort((v1, v2) => values[v1] < values[v2] ? -1 : values[v1] === values[v2] ? 0 : 1).reverse().forEach((value) => results[value] = values[value]);
+        else Object.keys(values).sort().reverse().forEach((value) => results[value] = values[value]);
+        name = key.substring(0, 1).toUpperCase() + key.substring(1);
+        client.emit('newData', {devicesOverviewData: results, deviceDataType: name});
+        client.emit('devicesChartData', results);
+    }
+};
+
 const forDaysInSpace = (days, space, cB) => {
     const dayInMillis = 1000 * 60 * 60 * 24; 
     const today = new Date();
@@ -286,10 +310,15 @@ io.on('connection', (client) => {
         client.emit('newData', {timestamp: new Date()});
         analyseTags(client);
         analyseStats(client, 'current');
+        sendDevicesChartData(client, 'grade', true);
     });
 
     client.on('loadBugs', () => sendBugs(client));
-    client.on('loadDevices', (sort) => sendDevices(client, sort));
+    client.on('loadDevices', (sort) => {
+        sendDevices(client, sort);
+        sendDevicesChartData(client, sort, true);
+    });
+    client.on('sortDevicesChart', (props) => sendDevicesChartData(client, props.name, props.sort));
     client.on('loadBugsVersions', () => sendBugs(client));
     client.on('removeBug', (value) => removeBug(value));
     client.on('setTimeSpace', (space) => analyseStats(client, space));
