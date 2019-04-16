@@ -37,6 +37,7 @@ class User extends Component {
                 <td className="userValue" id="deviceid"><a href={'https://api.vsa.2bad2c0.de/tags/' + this.props.id}
                                                            rel="noopener noreferrer" target="_blank">{this.props.id}</a>
                 </td>
+                <td className="userValue">{this.props.grade}</td>
                 <td className="userValue" id={this.props.dev === 'true' ? "isDev" : "normalUser"}>{this.props.dev}</td>
             </tr>
         );
@@ -52,7 +53,6 @@ class App extends Component {
     state = {
         timestamp: '-',
         userCount: '-',
-        oldUserCount: '-',
         userCountToday: '-',
         appStartsToday: '-',
         newestVersion: ['-', '-'],
@@ -66,7 +66,8 @@ class App extends Component {
         timeType: 'month',
         timeSpace: 'current',
         availableMonths: ['current'],
-        availableYears: [new Date().getFullYear().toString()]
+        availableYears: [new Date().getFullYear().toString()],
+        currentSort: 'lastSession'
     };
 
     constructor(props) {
@@ -211,37 +212,48 @@ class App extends Component {
         );
     };
 
-    createDevicesTable = (isDevice) => {
+    onSortDevices(type) {
+        if (type === this.state.currentSort) this.setState({devices: this.state.devices.reverse()});
+        else {
+            this.socket.emit('loadDevices', type);
+            this.setState({currentSort: type});
+        }
+    }
+
+    createDevicesTable = () => {
         //Inner loop to create children
-        const devices = isDevice ? this.state.devices : this.state.users;
+        const devices = this.state.devices;
         if (devices === undefined) return <p><Button
-            onClick={() => this.socket.emit(isDevice ? 'loadDevices' : 'loadUsers', 'lastSession')} variant="outlined"
+            onClick={() => this.socket.emit('loadDevices', 'lastSession')} variant="outlined"
             className="loadButton" color="inherit">Load</Button></p>;
         return (<table>
             <tr className="userRow">
                 <td className="userValue"></td>
                 <td className="userValue"><Button
-                    onClick={() => this.socket.emit(isDevice ? 'loadDevices' : 'loadUsers', 'device')}
+                    onClick={() => this.onSortDevices('device')}
                     variant="outlined" className="loadButton" color="inherit"><b>Device</b></Button></td>
                 <td className="userValue"><Button
-                    onClick={() => this.socket.emit(isDevice ? 'loadDevices' : 'loadUsers', 'lastSession')}
+                    onClick={() => this.onSortDevices('lastSession')}
                     variant="outlined" className="loadButton" color="inherit"><b>Last Session</b></Button></td>
                 <td className="userValue"><Button
-                    onClick={() => this.socket.emit(isDevice ? 'loadDevices' : 'loadUsers', 'appVersion')}
+                    onClick={() => this.onSortDevices('appVersion')}
                     variant="outlined" className="loadButton" color="inherit"><b>App Version</b></Button></td>
                 <td className="userValue"><Button
-                    onClick={() => this.socket.emit(isDevice ? 'loadDevices' : 'loadUsers', 'os')} variant="outlined"
+                    onClick={() => this.onSortDevices('os')} variant="outlined"
                     className="loadButton" color="inherit"><b>Os</b></Button></td>
                 <td className="userValue"><Button
-                    onClick={() => this.socket.emit(isDevice ? 'loadDevices' : 'loadUsers', 'id')} variant="outlined"
+                    onClick={() => this.onSortDevices('id')} variant="outlined"
                     className="loadButton" color="inherit"><b>Device ID</b></Button></td>
                 <td className="userValue"><Button
-                    onClick={() => this.socket.emit(isDevice ? 'loadDevices' : 'loadUsers', 'dev')} variant="outlined"
+                    onClick={() => this.onSortDevices('grade')} variant="outlined"
+                    className="loadButton" color="inherit"><b>Grade</b></Button></td>
+                <td className="userValue"><Button
+                    onClick={() => this.onSortDevices('dev')} variant="outlined"
                     className="loadButton" color="inherit"><b>Dev</b></Button></td>
             </tr>
             {devices.map((device) => <User index={devices.indexOf(device) + 1} device={device.tags.deviceName}
                                            lastSession={device.tags.lastSession} appVersion={device.tags.appVersion}
-                                           os={device.tags.os} id={device.id} tags={device.tags.toString()} dev={device.tags.dev.toString()}/>)}
+                                           os={device.tags.os} id={device.id} tags={device.tags.toString()} grade={device.tags.grade} dev={device.tags.dev.toString()}/>)}
         </table>);
     };
 
@@ -415,13 +427,7 @@ class App extends Component {
                     <p><b>Firebase users ({this.state.userCount})</b><Button
                         onClick={() => this.setState({devices: undefined})} variant="outlined" className="cancelButton"
                         color="inherit">X</Button></p>
-                    {this.createDevicesTable(true)}
-                </div>
-                <div className="category users">
-                    <p><b>Onesignal users ({this.state.oldUserCount})</b><Button
-                        onClick={() => this.setState({users: undefined})} variant="outlined" className="cancelButton"
-                        color="inherit">X</Button></p>
-                    {this.createDevicesTable(false)}
+                    {this.createDevicesTable()}
                 </div>
                 <h2>Bugs {this.createBugsButton()}</h2>
                 {this.createBugsTable()}

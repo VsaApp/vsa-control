@@ -11,7 +11,7 @@ const analyseTags = (client) => {
     const file = path.resolve(config.apiPath, 'tags.json');
     if (fs.existsSync(file)) {
         data = JSON.parse(fs.readFileSync(file).toString());
-        client.emit('newData', {userCount: data.devices.length, oldUserCount: data.users.length});
+        client.emit('newData', {userCount: data.devices.length});
     }
 };
 
@@ -57,26 +57,16 @@ const sortDeviceNames = (devices, sort) => {
         return sortedNames.indexOf(d1) < sortedNames.indexOf(d2) ? -1 : sortedNames.indexOf(d1) === sortedNames.indexOf(d2) ? 0 : 1;
     });
 
-    return sort === 'os' || sort === 'dev' ? result.reverse() : result;
+    return ['os', 'grade', 'dev'].includes(sort) ? result.reverse() : result;
 };
 
 const sendDevices = (client, sort) => {
     const file = path.resolve(config.apiPath, 'tags.json');
     if (fs.existsSync(file)) {
         data = JSON.parse(fs.readFileSync(file).toString()).devices;
-        if (['od', 'device', 'id', 'dev'].includes(sort)) data = sortDeviceNames(data, sort);
+        if (['os', 'device', 'id', 'dev', 'grade'].includes(sort)) data = sortDeviceNames(data, sort);
         else data = data.sort((d1, d2) => compaireDevices(d1, d2, sort));
         client.emit('newData', {devices: data});
-    }
-};
-
-const sendUsers = (client, sort) => {
-    const file = path.resolve(config.apiPath, 'tags.json');
-    if (fs.existsSync(file)) {
-        data = JSON.parse(fs.readFileSync(file).toString()).users;
-        if (['od', 'device', 'id', 'dev'].includes(sort)) data = sortDeviceNames(data, sort);
-        else data = data.sort((d1, d2) => compaireDevices(d1, d2, sort));
-        client.emit('newData', {users: data});
     }
 };
 
@@ -300,7 +290,6 @@ io.on('connection', (client) => {
 
     client.on('loadBugs', () => sendBugs(client));
     client.on('loadDevices', (sort) => sendDevices(client, sort));
-    client.on('loadUsers', (sort) => sendUsers(client, sort));
     client.on('loadBugsVersions', () => sendBugs(client));
     client.on('removeBug', (value) => removeBug(value));
     client.on('setTimeSpace', (space) => analyseStats(client, space));
