@@ -3,6 +3,7 @@ import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
 import DeleteIcon from '@material-ui/icons/Delete';
 import EditIcon from '@material-ui/icons/Edit';
+import GetApp from '@material-ui/icons/GetApp';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
@@ -245,6 +246,16 @@ class App extends Component {
         );
     };
 
+    createDownloadButton(filename, type) {
+        if (this.state[type] === undefined) return <div></div>;
+        var raw = {};
+        if (type === 'devices') raw.devices = this.state.devices;
+        else raw = this.state[type];
+        var data = new Blob([JSON.stringify(raw, null, 2)], {type: 'text/json'});
+        var csvURL = window.URL.createObjectURL(data);
+        return <a className='downloadButton' href={csvURL} download={filename}><GetApp fontSize="large" color="primary"/></a>;
+    }
+
     onSortDevices(type) {
         if (type === this.state.currentSort) {
             const sort = !this.state.sortDirection;
@@ -402,6 +413,7 @@ class App extends Component {
                         className="Value">{this.state.oldestVersion[0]} ({this.state.oldestVersion[1]} User)</b></div>
                 </div>
                 <h2>Stats 
+                    {this.createDownloadButton('stats.json', 'rawStats')}
                     <IconButton
                         variant="outlined"
                         onClick={() => this.setState({dialogOpen: true})}
@@ -479,9 +491,12 @@ class App extends Component {
                     </div>
                 </div>
                 <div id="devices" className="category users">
-                    <p><b>Firebase users ({this.state.userCount})</b><Button
-                        onClick={() => this.setState({devices: undefined})} variant="outlined" className="cancelButton"
-                        color="inherit">X</Button></p>
+                    <p><b>Firebase users ({this.state.userCount})</b>
+                        {this.createDownloadButton('tags.json', 'devices')}
+                        <Button
+                            onClick={() => this.setState({devices: undefined})} variant="outlined" className="cancelButton"
+                            color="inherit">X</Button>
+                    </p>
                     {this.createDevicesTable()}
                 </div>
                 <h2>Bugs {this.createBugsButton()}</h2>

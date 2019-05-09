@@ -259,6 +259,8 @@ const analyseStats = (client, space) => {
         results.availableYears = years;
 
         client.emit('newData', results);
+
+        client.emit('newData', {rawStats: data});
     }
 };
 
